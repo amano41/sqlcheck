@@ -11,8 +11,8 @@ PATH_TYPE = Union[str, bytes, os.PathLike]
 
 def usage():
     cmd = Path(__file__).name
-    print(f"Usage: python {cmd} <file>")
-    print(f"       python {cmd} <directory>")
+    print(f"Usage: {cmd} <file>")
+    print(f"       {cmd} <directory>")
 
 
 def main():
