@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "sqlcheck"
+version = "0.1.0"
+description = "SQL query checker"
+authors = ["Yoichi Amano <amano.yoichi@gmail.com>"]
+readme = "README.md"
+packages = [{include = "sqlcheck", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+sqlparse = "*"
+
+[tool.poetry.group.dev.dependencies]
+flake8 = "*"
+black = "*"
+
+[tool.poetry.scripts]
+sqlcheck = "sqlcheck.sqlcheck:main"
+sqldump = "sqlcheck.sqldump:main"
+sqlformat = "sqlcheck.sqlformat:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
