@@ -5,6 +5,8 @@ from typing import Union
 
 from mindiff import mindiff
 
+from .sqlformat import format_query
+
 PATH_TYPE = Union[str, bytes, os.PathLike]
 
 
@@ -32,13 +34,13 @@ def main():
     elif target_path.is_dir():
 
         with answer_path.open(encoding="utf-8") as f:
-            answer_sql = f.readlines()
+            answer_sql = f.read()
 
         for target_file in target_path.glob("*.sql"):
 
             print(target_file)
             with target_file.open(encoding="utf-8") as f:
-                target_sql = f.readlines()
+                target_sql = f.read()
 
             lines = check(target_sql, answer_sql)
 
@@ -52,22 +54,28 @@ def main():
 
 
 def check_file(target_file: PATH_TYPE, answer_file: PATH_TYPE) -> list[str]:
+    # フォーマット等の前処理を適用するため check() に行データを渡す
+    # mindiff にはファイルを比較する compare_file() もあるが使わない
     with open(target_file, "r", encoding="utf-8") as f:
-        target_sql = f.readlines()
+        target_sql = f.read()
     with open(answer_file, "r", encoding="utf-8") as f:
-        answer_sql = f.readlines()
+        answer_sql = f.read()
     return check(target_sql, answer_sql)
 
 
-def check(target: list[str], answer: list[str]) -> list[str]:
+def check(target_sql: str, answer_sql: str) -> list[str]:
 
     # ダブルクォーテーションはデータベースによって扱いが異なるので削除しておく
     # 多くの RDBMS では識別子に予約語や特殊文字を使用したい場合のエスケープ用だが，
     # MySQL では文字列として，SQLite でも文脈によって文字列として解釈される
-    target = [t.replace('"', "") for t in target]
-    answer = [a.replace('"', "") for a in answer]
+    target_sql = target_sql.replace('"', "")
+    answer_sql = answer_sql.replace('"', "")
 
-    return list(mindiff.compare(target, answer))
+    # 整形して行単位に分割
+    target_lines = format_query(target_sql)
+    answer_lines = format_query(answer_sql)
+
+    return list(mindiff.compare(target_lines, answer_lines))
 
 
 if __name__ == "__main__":
