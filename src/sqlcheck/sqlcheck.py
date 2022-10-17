@@ -66,15 +66,33 @@ def check_file(target_file: PATH_TYPE, answer_file: PATH_TYPE) -> list[str]:
 
 def check(target_sql: str, answer_sql: str) -> list[str]:
 
+    t = target_sql
+    a = answer_sql
+
+    # target と answer に同じ文字列置換を適用する
+    def _replace(p: str, r: str, t: str, a: str) -> tuple[str, str]:
+        t = re.sub(p, r, t)
+        a = re.sub(p, r, a)
+        return (t, a)
+
     # ダブルクォーテーションはデータベースによって扱いが異なるので削除しておく
     # 多くの RDBMS では識別子に予約語や特殊文字を使用したい場合のエスケープ用だが，
-    # MySQL では文字列として，SQLite でも文脈によって文字列として解釈される
-    target_sql = target_sql.replace('"', "")
-    answer_sql = answer_sql.replace('"', "")
+    # MySQL では文字列として，SQLite でも文脈によっては文字列として解釈される
+    t, a = _replace('"', "", t, a)
+
+    # 括弧の前後に 1 スペース
+    t, a = _replace(r"[ \t]*\([ \t]*", " ( ", t, a)
+    t, a = _replace(r"[ \t]*\)[ \t]*", " ) ", t, a)
+
+    # カンマの前は空けず後ろに 1 スペース
+    t, a = _replace(r"[ \t]*,[ \t]*", ", ", t, a)
+
+    # セミコロン・改行の前にあるスペースを削除
+    t, a = _replace(r"[ \t]*([;\n])", r"\1", t, a)
 
     # 整形して行単位に分割
-    target_lines = format_query(target_sql)
-    answer_lines = format_query(answer_sql)
+    target_lines = format_query(t)
+    answer_lines = format_query(a)
 
     # mindiff は file2 のどの行が file1 から変わっているかを出力する
     # target のどこに間違いがあるかを示すためには引数を A → T の順にすればよい
