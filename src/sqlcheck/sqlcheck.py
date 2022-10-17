@@ -1,9 +1,9 @@
 import os
-import re
 import sys
-from difflib import Differ
 from pathlib import Path
 from typing import Union
+
+from mindiff import mindiff
 
 PATH_TYPE = Union[str, bytes, os.PathLike]
 
@@ -52,68 +52,22 @@ def main():
 
 
 def check_file(target_file: PATH_TYPE, answer_file: PATH_TYPE) -> list[str]:
-
     with open(target_file, "r", encoding="utf-8") as f:
         target_sql = f.readlines()
-
     with open(answer_file, "r", encoding="utf-8") as f:
         answer_sql = f.readlines()
-
     return check(target_sql, answer_sql)
 
 
 def check(target: list[str], answer: list[str]) -> list[str]:
 
-    result = []
-
-    # ダブルクォーテーションを削除
+    # ダブルクォーテーションはデータベースによって扱いが異なるので削除しておく
+    # 多くの RDBMS では識別子に予約語や特殊文字を使用したい場合のエスケープ用だが，
+    # MySQL では文字列として，SQLite でも文脈によって文字列として解釈される
     target = [t.replace('"', "") for t in target]
     answer = [a.replace('"', "") for a in answer]
 
-    differ = Differ()
-    lines = list(differ.compare(target, answer))
-
-    n = len(lines)
-    i = 0
-
-    while i < n:
-
-        line = lines[i]
-        i = i + 1
-
-        # 差異のある場所を示すマーカー行は出力しない
-        if line.startswith("? "):
-            continue
-
-        # target 側にのみ存在する行
-        if line.startswith("- "):
-            # 次の行がマーカー行であれば差異のある行
-            # 必ず answer 側の + 行と ? 行が続くのでスキップする
-            # 削除するべき行ではなく修正するべき行なのでマーカーを * に変更する
-            if i < n:
-                next_line = lines[i]
-                if next_line.startswith("? "):
-                    i = i + 2
-                    line = re.sub(r"^-", "*", line)
-            result.append(line)
-            continue
-
-        # answer 側にのみ存在する行
-        if line.startswith("+ "):
-            # 次の行がマーカー行であれば差異のある行
-            # target 側で出力済みなので出力しなくてよい
-            # 次の行がマーカー行でなかった場合は追加するべき行なので出力する
-            if i < n:
-                next_line = lines[i]
-                if next_line.startswith("? "):
-                    continue
-            result.append(line)
-            continue
-
-        # 同一の行はそのまま出力
-        result.append(line)
-
-    return result
+    return list(mindiff.compare(target, answer))
 
 
 if __name__ == "__main__":
