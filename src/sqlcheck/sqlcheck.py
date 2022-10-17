@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Union
@@ -75,7 +76,16 @@ def check(target_sql: str, answer_sql: str) -> list[str]:
     target_lines = format_query(target_sql)
     answer_lines = format_query(answer_sql)
 
-    return list(mindiff.compare(target_lines, answer_lines))
+    # mindiff は file2 のどの行が file1 から変わっているかを出力する
+    # target のどこに間違いがあるかを示すためには引数を A → T の順にすればよい
+    # 引数の順番を入れ替えると追加・削除のマーカーも逆になるので元に戻す必要がある
+    table = {"+": "-", "-": "+"}
+    lines = []
+    for line in mindiff.compare(answer_lines, target_lines):
+        line = re.sub(r"^[+-]", lambda m: table[m.group(0)], line)
+        lines.append(line)
+
+    return lines
 
 
 if __name__ == "__main__":
