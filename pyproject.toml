@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sqlcheck"
-version = "0.2.0"
+version = "0.3.0"
 description = "SQL query checker"
 authors = ["Yoichi Amano <amano.yoichi@gmail.com>"]
 readme = "README.md"
@@ -9,6 +9,7 @@ packages = [{include = "sqlcheck", from = "src"}]
 [tool.poetry.dependencies]
 python = "^3.9"
 sqlparse = "*"
+mindiff = {git = "ssh://github.com/amano41/mindiff"}
 
 [tool.poetry.group.dev.dependencies]
 flake8 = "*"

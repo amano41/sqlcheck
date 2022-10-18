@@ -61,6 +61,21 @@ optional = false
 python-versions = ">=3.6"
 
 [[package]]
+name = "mindiff"
+version = "0.1.0"
+description = "Diff with simplified output format"
+category = "main"
+optional = false
+python-versions = "^3.9"
+develop = false
+
+[package.source]
+type = "git"
+url = "ssh://github.com/amano41/mindiff"
+reference = "HEAD"
+resolved_reference = "69728171d5d70dbfedd836d88c9ebb4e472794bd"
+
+[[package]]
 name = "mypy-extensions"
 version = "0.4.3"
 description = "Experimental type system extensions for programs checked with the mypy typechecker."
@@ -131,7 +146,7 @@ python-versions = ">=3.7"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "f7230a88f948e79ddf70b6135a88023a51044cd7ae26abd3447571f26b185117"
+content-hash = "db179afe725194e0fa9573f87ba0f250a4ff93c640c8654065dfd9b1e9c6cb67"
 
 [metadata.files]
 black = [
@@ -173,6 +188,7 @@ mccabe = [
     {file = "mccabe-0.7.0-py2.py3-none-any.whl", hash = "sha256:6c2d30ab6be0e4a46919781807b4f0d834ebdd6c6e3dca0bda5a15f863427b6e"},
     {file = "mccabe-0.7.0.tar.gz", hash = "sha256:348e0240c33b60bbdf4e523192ef919f28cb2c3d7d5c7794f74009290f236325"},
 ]
+mindiff = []
 mypy-extensions = [
     {file = "mypy_extensions-0.4.3-py2.py3-none-any.whl", hash = "sha256:090fedd75945a69ae91ce1303b5824f428daf5a028d2f6ab8a299250a846f15d"},
     {file = "mypy_extensions-0.4.3.tar.gz", hash = "sha256:2d82818f5bb3e369420cb3c4060a7970edba416647068eb4c5343488a6c604a8"},

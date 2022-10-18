@@ -1,9 +1,12 @@
 import os
 import re
 import sys
-from difflib import Differ
 from pathlib import Path
 from typing import Union
+
+from mindiff import mindiff
+
+from .sqlformat import format_query
 
 PATH_TYPE = Union[str, bytes, os.PathLike]
 
@@ -32,13 +35,13 @@ def main():
     elif target_path.is_dir():
 
         with answer_path.open(encoding="utf-8") as f:
-            answer_sql = f.readlines()
+            answer_sql = f.read()
 
         for target_file in target_path.glob("*.sql"):
 
             print(target_file)
             with target_file.open(encoding="utf-8") as f:
-                target_sql = f.readlines()
+                target_sql = f.read()
 
             lines = check(target_sql, answer_sql)
 
@@ -52,68 +55,55 @@ def main():
 
 
 def check_file(target_file: PATH_TYPE, answer_file: PATH_TYPE) -> list[str]:
-
+    # フォーマット等の前処理を適用するため check() に行データを渡す
+    # mindiff にはファイルを比較する compare_file() もあるが使わない
     with open(target_file, "r", encoding="utf-8") as f:
-        target_sql = f.readlines()
-
+        target_sql = f.read()
     with open(answer_file, "r", encoding="utf-8") as f:
-        answer_sql = f.readlines()
-
+        answer_sql = f.read()
     return check(target_sql, answer_sql)
 
 
-def check(target: list[str], answer: list[str]) -> list[str]:
+def check(target_sql: str, answer_sql: str) -> list[str]:
 
-    result = []
+    t = target_sql
+    a = answer_sql
 
-    # ダブルクォーテーションを削除
-    target = [t.replace('"', "") for t in target]
-    answer = [a.replace('"', "") for a in answer]
+    # target と answer に同じ文字列置換を適用する
+    def _replace(p: str, r: str, t: str, a: str) -> tuple[str, str]:
+        t = re.sub(p, r, t)
+        a = re.sub(p, r, a)
+        return (t, a)
 
-    differ = Differ()
-    lines = list(differ.compare(target, answer))
+    # ダブルクォーテーションはデータベースによって扱いが異なるので削除しておく
+    # 多くの RDBMS では識別子に予約語や特殊文字を使用したい場合のエスケープ用だが，
+    # MySQL では文字列として，SQLite でも文脈によっては文字列として解釈される
+    t, a = _replace('"', "", t, a)
 
-    n = len(lines)
-    i = 0
+    # 括弧の前後に 1 スペース
+    t, a = _replace(r"[ \t]*\([ \t]*", " ( ", t, a)
+    t, a = _replace(r"[ \t]*\)[ \t]*", " ) ", t, a)
 
-    while i < n:
+    # カンマの前は空けず後ろに 1 スペース
+    t, a = _replace(r"[ \t]*,[ \t]*", ", ", t, a)
 
-        line = lines[i]
-        i = i + 1
+    # セミコロン・改行の前にあるスペースを削除
+    t, a = _replace(r"[ \t]*([;\n])", r"\1", t, a)
 
-        # 差異のある場所を示すマーカー行は出力しない
-        if line.startswith("? "):
-            continue
+    # 整形して行単位に分割
+    target_lines = format_query(t)
+    answer_lines = format_query(a)
 
-        # target 側にのみ存在する行
-        if line.startswith("- "):
-            # 次の行がマーカー行であれば差異のある行
-            # 必ず answer 側の + 行と ? 行が続くのでスキップする
-            # 削除するべき行ではなく修正するべき行なのでマーカーを * に変更する
-            if i < n:
-                next_line = lines[i]
-                if next_line.startswith("? "):
-                    i = i + 2
-                    line = re.sub(r"^-", "*", line)
-            result.append(line)
-            continue
+    # mindiff は file2 のどの行が file1 から変わっているかを出力する
+    # target のどこに間違いがあるかを示すためには引数を A → T の順にすればよい
+    # 引数の順番を入れ替えると追加・削除のマーカーも逆になるので元に戻す必要がある
+    table = {"+": "-", "-": "+"}
+    lines = []
+    for line in mindiff.compare(answer_lines, target_lines):
+        line = re.sub(r"^[+-]", lambda m: table[m.group(0)], line)
+        lines.append(line)
 
-        # answer 側にのみ存在する行
-        if line.startswith("+ "):
-            # 次の行がマーカー行であれば差異のある行
-            # target 側で出力済みなので出力しなくてよい
-            # 次の行がマーカー行でなかった場合は追加するべき行なので出力する
-            if i < n:
-                next_line = lines[i]
-                if next_line.startswith("? "):
-                    continue
-            result.append(line)
-            continue
-
-        # 同一の行はそのまま出力
-        result.append(line)
-
-    return result
+    return lines
 
 
 if __name__ == "__main__":
