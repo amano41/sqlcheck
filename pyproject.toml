@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sqlcheck"
-version = "0.3.0"
+version = "0.3.1"
 description = "SQL query checker"
 authors = ["Yoichi Amano <amano.yoichi@gmail.com>"]
 readme = "README.md"
